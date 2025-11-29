@@ -18,6 +18,8 @@ def init_session_state():
         st.session_state.selected_model = "deepseek-ai/DeepSeek-V3.1-Terminus"
     if "continuous_mode" not in st.session_state:
         st.session_state.continuous_mode = False
+    if "mode_selection" not in st.session_state:
+        st.session_state.mode_selection = "普通模式"
     if "assistant" not in st.session_state:
         try:
             st.session_state.assistant = CodeAssistant(model_name=st.session_state.selected_model)
@@ -42,19 +44,56 @@ def main():
     st.set_page_config(
         page_title="代码助手",
         page_icon=None,  # 无图标
-        layout="centered",
+        layout="wide",  # 使用宽屏布局，扩大内容区域
         initial_sidebar_state="collapsed"  # 默认收起侧边栏
     )
     
-    # 隐藏Streamlit默认的菜单和页脚
-    hide_streamlit_style = """
+    # 初始化
+    init_session_state()
+    
+    # 隐藏Streamlit默认的菜单和页脚，优化样式
+    base_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* 减少顶部空白 */
+    .stApp > header {
+        background-color: transparent;
+    }
+    
+    /* 减少主容器的 padding */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 95%;
+    }
+    
+    /* 优化标题区域 */
+    h1 {
+        margin-bottom: 0.5rem;
+        font-size: 2rem;
+    }
+    
+    /* 减少 caption 的 margin */
+    .stCaption {
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+    
+    /* 优化列布局 */
+    [data-testid="column"] {
+        padding: 0.5rem;
+    }
+    
+    /* 减少 expander 的 margin */
+    .streamlit-expanderHeader {
+        margin-top: 1rem;
+    }
     </style>
     """
-    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+    st.markdown(base_style, unsafe_allow_html=True)
     
     # 检查API密钥
     if not os.getenv("OPENAI_API_KEY"):
@@ -62,11 +101,8 @@ def main():
         st.info("在项目根目录创建 .env 文件，添加：OPENAI_API_KEY=your_key")
         st.stop()
     
-    # 初始化
-    init_session_state()
-    
-    # 标题和模型选择
-    col_title, col_model, col_continuous = st.columns([2, 1, 1])
+    # 标题和模型选择 - 对齐选择框
+    col_title, col_model, col_mode = st.columns([3, 1.5, 1.5])
     with col_title:
         st.title("代码助手")
         st.caption("基于LangGraph的智能代码生成、优化和审查工具")
@@ -104,19 +140,22 @@ def main():
                 st.error(f"切换模型失败: {e}")
                 st.stop()
     
-    with col_continuous:
-        st.write("")  # 占位
-        st.write("")  # 占位
-        # 连续思考开关
-        continuous_mode = st.toggle(
-            "连续思考",
-            value=st.session_state.continuous_mode,
-            key="continuous_toggle",
-            help="开启后使用连续对话模式（code_assistant_continous.py），支持记忆功能和详细日志"
+    with col_mode:
+        # 模式选择下拉框 - 与模型选择框对齐
+        mode_options = ["普通模式", "连续思考"]
+        current_index = 0 if st.session_state.mode_selection == "普通模式" else 1
+        selected_mode = st.selectbox(
+            "模式",
+            mode_options,
+            index=current_index,
+            key="mode_selector",
+            help="选择工作模式：普通模式支持流式输出，连续思考模式支持连续评审与优化"
         )
         
-        # 如果连续思考状态改变，清除对话历史并重新初始化
-        if continuous_mode != st.session_state.continuous_mode:
+        # 如果模式改变，更新状态并重新初始化
+        if selected_mode != st.session_state.mode_selection:
+            st.session_state.mode_selection = selected_mode
+            continuous_mode = (selected_mode == "连续思考")
             st.session_state.continuous_mode = continuous_mode
             st.session_state.messages = []
             # 重新初始化连续思考助手
@@ -134,17 +173,20 @@ def main():
                     st.warning(f"连续思考初始化失败: {e}")
             st.rerun()
     
+    # 获取当前模式状态
+    continuous_mode = st.session_state.continuous_mode
+    
     # 显示对话历史
     for message in st.session_state.messages:
         with st.chat_message("user" if isinstance(message, HumanMessage) else "assistant"):
             st.markdown(message.content)
     
-    # 在输入框上方显示连续思考状态提示
+    # 在输入框上方显示连续思考状态提示（使用更紧凑的样式）
     if st.session_state.continuous_mode:
-        st.info("🔄 连续思考已开启 - 使用 code_assistant_continous.py，支持记忆功能")
+        st.info("🔄 连续思考模式已启用", icon="ℹ️")
     
     # 用户输入
-    input_placeholder = "输入您的问题..." + ("（连续思考）" if st.session_state.continuous_mode else "")
+    input_placeholder = "输入您的问题..."
     if prompt := st.chat_input(input_placeholder):
         # 添加用户消息
         st.session_state.messages.append(HumanMessage(content=prompt))
@@ -208,7 +250,7 @@ def main():
                 import traceback
                 st.code(traceback.format_exc())
     
-    # 简洁的设置区域 - 使用expander而不是侧边栏
+    # 简洁的设置区域 - 使用expander而不是侧边栏，放在底部
     with st.expander("⚙️ 设置", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
@@ -223,33 +265,6 @@ def main():
 - **代码生成**：描述需求，自动生成代码
 - **代码优化**：提供代码，自动优化
 - **代码审查**：提供代码，获得审查评分和建议
-
-**命令行使用：**
-```bash
-# 交互模式
-python cli.py -i
-
-# 单次查询
-python cli.py "你的问题"
-
-# 连续思考模式（交互）
-python cli.py -c -i
-
-# 连续思考模式（单次查询）
-python cli.py -c "你的问题"
-
-# 指定模型
-python cli.py -m "DeepSeek V3.1 Terminus" -i
-
-# 列出所有可用模型
-python cli.py --list-models
-```
-
-**参数说明：**
-- `-i, --interactive`: 交互模式
-- `-c, --continuous`: 启用连续思考模式
-- `-m, --model`: 选择模型
-- `--list-models`: 列出所有可用模型
                 """)
 
 
