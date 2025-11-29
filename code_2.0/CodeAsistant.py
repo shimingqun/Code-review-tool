@@ -130,7 +130,11 @@ class AIService:
                 result["intent"] = Intent(intent_str)
             except ValueError:
                 result["intent"] = Intent.UNKNOWN
-                
+            content_lower = response.lower()
+            if "review" in content_lower or  "optimize" in content_lower:
+                if(result.get('filename') == None):
+                    result["intent"] = Intent.UNKNOWN
+
             logger.info(f"意图分析结果: {result['intent']}, 文件名: {result.get('filename')}")
             return result
         except json.JSONDecodeError:
