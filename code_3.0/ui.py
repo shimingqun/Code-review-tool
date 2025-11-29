@@ -223,6 +223,33 @@ def main():
 - **代码生成**：描述需求，自动生成代码
 - **代码优化**：提供代码，自动优化
 - **代码审查**：提供代码，获得审查评分和建议
+
+**命令行使用：**
+```bash
+# 交互模式
+python cli.py -i
+
+# 单次查询
+python cli.py "你的问题"
+
+# 连续思考模式（交互）
+python cli.py -c -i
+
+# 连续思考模式（单次查询）
+python cli.py -c "你的问题"
+
+# 指定模型
+python cli.py -m "DeepSeek V3.1 Terminus" -i
+
+# 列出所有可用模型
+python cli.py --list-models
+```
+
+**参数说明：**
+- `-i, --interactive`: 交互模式
+- `-c, --continuous`: 启用连续思考模式
+- `-m, --model`: 选择模型
+- `--list-models`: 列出所有可用模型
                 """)
 
 
