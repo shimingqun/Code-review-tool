@@ -1,4 +1,4 @@
-# 代码助手 - CodeSuper
+# 代码助手 - Code Quality Agent
 
 基于 LangGraph 实现的智能代码助手，支持代码生成、优化和审查功能。
 
@@ -131,7 +131,7 @@ streamlit run ui.py
 ## 项目结构
 
 ```
-CodeSuper/
+/
 ├── code_assistant.py  # 核心代码助手实现（LangGraph）
 ├── cli.py             # 终端命令行接口
 ├── ui.py              # Web UI 界面（Streamlit）
