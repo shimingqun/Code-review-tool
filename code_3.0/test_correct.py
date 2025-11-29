@@ -16,13 +16,13 @@ class InputHandler:
     def get_user_input(self) -> str:
         """
         Get user input
-        
+        12123
         Returns:
             str: 
         """
         return self._user_input
     
-    def get_input_from_terminal(self, prompt="👤 用户: ") -> str:
+    def get_input_from_terminal(self, prompt="👤 用户: ") -> str:1111
         """
         get input from terminal
         
